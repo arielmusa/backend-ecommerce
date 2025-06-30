@@ -2,6 +2,6 @@ import express from "express";
 import index from "../controllers/productsControllers.js";
 const router = express.Router();
 
-router.get("/products", index);
+router.get("/", index);
 
 export default router;
