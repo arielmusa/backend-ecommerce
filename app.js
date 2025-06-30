@@ -2,15 +2,17 @@ import express from "express";
 import { db } from "./config/db.js";
 import "dotenv/config";
 import cors from "cors";
-const corsOptions = {
-  origin: "localhost:3000",
-};
+
+import productsRouter from "./routers/router.js";
+
 const app = express();
 
-app.use(cors(corsOptions));
+app.use(cors());
 app.use(express.json());
 
-app.get("", (req, res) => {
+app.use("/", productsRouter);
+
+app.get("/", (req, res) => {
   console.log("Welcome!");
 });
 
