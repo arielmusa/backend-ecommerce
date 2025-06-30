@@ -2,6 +2,7 @@ import express from "express";
 import { db } from "./config/db.js";
 import "dotenv/config";
 import cors from "cors";
+import productsRouter from "./routers/router.js";
 
 const app = express();
 
