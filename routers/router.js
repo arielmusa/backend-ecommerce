@@ -24,15 +24,13 @@ import {
 
 const router = express.Router();
 
-//
-// 📦 PRODUCTS ROUTES
-//
+//  PRODUCTS ROUTES
 
 // Lista prodotti (tutti, ordinati per nome asc)
 router.get("/products", index);
 
 // Ricerca + ordinamento
-// es: /api/products/search?search=iphone&sort=price_asc
+
 router.get("/products/search", searchProducts);
 
 // Ultimi arrivi
@@ -44,9 +42,7 @@ router.get("/products/most-sold", getMostSoldProducts);
 // Dettaglio prodotto
 router.get("/products/:id", getProductById);
 
-//
-// 📦 ORDERS ROUTES
-//
+// ORDERS ROUTES
 
 // Lista ordini
 router.get("/orders", indexOrders);
@@ -57,9 +53,7 @@ router.get("/orders/:id", showOrders);
 // Checkout: conferma ordine
 router.post("/orders", createOrder);
 
-//
-// 🛒 CART ROUTES
-//
+//  CART ROUTES
 
 // Visualizza carrello
 router.get("/cart", getCart);
