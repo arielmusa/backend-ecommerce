@@ -2,71 +2,93 @@ import { db } from "../config/db.js";
 import { sendEmail } from "../utils/sendEmail.js";
 
 // ALL ORDERS
-
 export default function indexOrders(req, res) {
-  const sql = "SELECT * FROM `orders` ORDER BY `created_at` DESC;";
-  db.query(sql, (err, results) => {
+  db.query("SELECT * FROM orders ORDER BY created_at DESC", (err, data) => {
     if (err) {
-      return res.status(502).json({
-        error: 502,
-        message: "invalid query",
-      });
+      res.status(502).json({ error: 502, message: "Errore nella query" });
+    } else {
+      res.json(data);
     }
-    res.json(results);
   });
 }
 
 // ORDER DETAIL
-
 export function showOrders(req, res) {
-  const { id } = req.params;
-  const sql = "SELECT * FROM `orders` WHERE id = ?;";
-  db.query(sql, [id], (err, results) => {
+  const id = req.params.id;
+  db.query("SELECT * FROM orders WHERE id = ?", [id], (err, data) => {
     if (err) {
-      return res.status(502).json({ error: 502, message: "invalid query" });
+      res.status(502).json({ error: 502, message: "Errore nella query" });
+    } else if (data.length === 0) {
+      res.status(404).json({ error: 404, message: "Ordine non trovato" });
+    } else {
+      res.json(data[0]);
     }
-    if (results.length === 0) {
-      return res.status(404).json({ error: 404, message: "order not found" });
-    }
-    res.json(results[0]);
   });
 }
 
 // CREATE ORDER + SEND EMAIL
-
-// Tutti gli userId sono stati assegnati per eseguire il test con Postman; TO DO: riadattare per front-end
-
-export function createOrder(req, res) {
-  const userId = 4;
+export async function createOrder(req, res) {
+  const userId = 1;
   const { paymentMethod, address } = req.body;
 
-  // Aggiorna l'ordine in stato 'cart' -> confirmed
-  const sql = `
-    UPDATE orders
-    SET status = 'confirmed', payment_method = ?, address = ?
-    WHERE user_id = ? AND status = 'cart'
-  `;
-
-  db.query(sql, [paymentMethod, address, userId], async (err) => {
-    if (err)
-      return res.status(502).json({ error: 502, message: "invalid query" });
-
-    // Invio email di conferma (finto)
-    try {
-      await sendEmail(
-        "cliente@email.com",
-        "Conferma ordine",
-        "Grazie per il tuo ordine!"
-      );
-      await sendEmail(
-        "venditore@email.com",
-        "Nuovo ordine ricevuto",
-        "Hai ricevuto un nuovo ordine!"
-      );
-    } catch (e) {
-      console.error("Errore invio email", e);
+  const findSql =
+    "SELECT id FROM orders WHERE user_id = ? AND status = 'cart' LIMIT 1";
+  db.query(findSql, [userId], (err, cart) => {
+    if (err) {
+      res.status(502).json({ error: 502, message: "Errore nella query" });
+      return;
     }
 
-    res.json({ message: "order confirmed and email sent" });
+    if (cart.length === 0) {
+      res.status(404).json({ error: 404, message: "Carrello non trovato" });
+      return;
+    }
+
+    const orderId = cart[0].id;
+    const totalSql =
+      "SELECT SUM(p.price * op.product_quantity) AS total FROM order_product op JOIN products p ON op.product_id = p.id WHERE op.order_id = ?";
+    db.query(totalSql, [orderId], async (err2, totalData) => {
+      if (err2) {
+        res.status(502).json({ error: 502, message: "Errore nel totale" });
+        return;
+      }
+
+      const total = totalData[0].total || 0;
+      const updateSql =
+        "UPDATE orders SET status = 'confirmed', payment_method = ?, address = ?, total = ? WHERE id = ?";
+      db.query(
+        updateSql,
+        [paymentMethod, address, total, orderId],
+        async (err3) => {
+          if (err3) {
+            res
+              .status(502)
+              .json({ error: 502, message: "Errore aggiornamento" });
+            return;
+          }
+
+          try {
+            await sendEmail(
+              "cliente@email.com",
+              "Conferma ordine",
+              "Grazie per il tuo ordine!"
+            );
+            await sendEmail(
+              "venditore@email.com",
+              "Nuovo ordine",
+              "Hai ricevuto un ordine!"
+            );
+          } catch (e) {
+            console.log("Errore email:", e);
+          }
+
+          res.json({
+            message: "Ordine confermato ed email inviata",
+            orderId,
+            total,
+          });
+        }
+      );
+    });
   });
 }
