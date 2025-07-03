@@ -10,17 +10,10 @@ import {
 } from "../controllers/productsController.js";
 
 // CONTROLLERS ordini
-import indexOrders, {
-  showOrders,
+import {
+  getOrderDetail,
   createOrder,
 } from "../controllers/ordersController.js";
-
-// CONTROLLERS carrello
-import {
-  getCart,
-  addToCart,
-  updateCart,
-} from "../controllers/cartController.js";
 
 const router = express.Router();
 
@@ -44,11 +37,8 @@ router.get("/products/:id", getProductById);
 
 // ORDERS ROUTES
 
-// Lista ordini
-router.get("/orders", indexOrders);
-
 // Dettaglio ordine
-router.get("/orders/:id", showOrders);
+router.get("/orders/:id", getOrderDetail);
 
 // Checkout: conferma ordine
 router.post("/orders", createOrder);

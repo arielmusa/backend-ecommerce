@@ -29,19 +29,82 @@ export function getProductById(req, res) {
 export function searchProducts(req, res) {
   const search = req.query.search || "";
   const sort = req.query.sort || "name_asc";
+  const brand = req.query.brand || "";
+  const category = req.query.category || "";
+  const minPrice = parseFloat(req.query.minPrice) || 0;
+  const maxPrice = parseFloat(req.query.maxPrice) || Infinity;
 
-  let orderBy = "ORDER BY name ASC";
-  if (sort === "price_asc") orderBy = "ORDER BY price ASC";
-  else if (sort === "price_desc") orderBy = "ORDER BY price DESC";
-  else if (sort === "recent") orderBy = "ORDER BY created_at DESC";
+  // Ordine dinamico in base al tipo
+  let orderBy = "ORDER BY p.name ASC";
+  if (sort === "price_asc") {
+    orderBy = "ORDER BY effective_price ASC";
+  } else if (sort === "price_desc") {
+    orderBy = "ORDER BY effective_price DESC";
+  } else if (sort === "recent") {
+    orderBy = "ORDER BY p.created_at DESC";
+  }
 
-  const sql = `SELECT * FROM products WHERE name LIKE ? ${orderBy}`;
-  db.query(sql, [`%${search}%`], (err, data) => {
+  const filters = [];
+  const values = [];
+
+  // Ricerca su nome o descrizione
+  if (search !== "") {
+    filters.push("(p.name LIKE ? OR p.description LIKE ?)");
+    values.push(`%${search}%`, `%${search}%`);
+  }
+
+  if (brand !== "") {
+    filters.push("b.name = ?");
+    values.push(brand);
+  }
+
+  if (category !== "") {
+    filters.push("c.name = ?");
+    values.push(category);
+  }
+
+  filters.push(`
+    CASE 
+      WHEN p.promotion_price > 0 THEN p.promotion_price 
+      ELSE p.price 
+    END >= ?
+  `);
+  values.push(minPrice);
+
+  if (maxPrice !== Infinity) {
+    filters.push(`
+      CASE 
+        WHEN p.promotion_price > 0 THEN p.promotion_price 
+        ELSE p.price 
+      END <= ?
+    `);
+    values.push(maxPrice);
+  }
+
+  const whereClause = filters.length ? "WHERE " + filters.join(" AND ") : "";
+
+  const sql = `
+    SELECT 
+      p.*, 
+      b.name AS brand_name, 
+      c.name AS category_name,
+      CASE 
+        WHEN p.promotion_price > 0 THEN p.promotion_price 
+        ELSE p.price 
+      END AS effective_price
+    FROM products p
+    JOIN brands b ON p.brand_id = b.id
+    JOIN categories c ON p.category_id = c.id
+    ${whereClause}
+    ${orderBy}
+  `;
+
+  db.query(sql, values, (err, results) => {
     if (err) {
-      res.status(502).json({ error: 502, message: "Errore nella query" });
-    } else {
-      res.json(data);
+      console.error("Errore nella ricerca:", err);
+      return res.status(502).json({ error: 502, message: "Query fallita" });
     }
+    res.json(results);
   });
 }
 
