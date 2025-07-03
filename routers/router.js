@@ -37,7 +37,7 @@ router.get("/products/search", searchProducts);
 router.get("/products/recent", getRecentProducts);
 
 // Più venduti
-router.get("/products/most-sold", getMostSoldProducts);
+router.get("/products/best-sellers", getMostSoldProducts);
 
 // Dettaglio prodotto
 router.get("/products/:id", getProductById);
