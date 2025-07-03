@@ -1,38 +1,34 @@
 import { db } from "../config/db.js";
 
 // ALL PRODUCTS
-
 export default function index(req, res) {
-  const sql = "SELECT * FROM `products` ORDER BY `name` ASC;";
-  db.query(sql, (err, results) => {
-    if (err)
-      return res.status(502).json({
-        error: 502,
-        message: "invalid query",
-      });
-    res.json(results);
+  db.query("SELECT * FROM products ORDER BY name ASC", (err, data) => {
+    if (err) {
+      res.status(502).json({ error: 502, message: "Errore nella query" });
+    } else {
+      res.json(data);
+    }
   });
 }
 
 // PRODUCT DETAIL
-
 export function getProductById(req, res) {
-  const { id } = req.params;
-  const sql = "SELECT * FROM products WHERE id = ?";
-  db.query(sql, [id], (err, results) => {
-    if (err)
-      return res.status(502).json({ error: 502, message: "invalid query" });
-    if (results.length === 0)
-      return res.status(404).json({ error: 404, message: "product not found" });
-    res.json(results[0]);
+  const id = req.params.id;
+  db.query("SELECT * FROM products WHERE id = ?", [id], (err, data) => {
+    if (err) {
+      res.status(502).json({ error: 502, message: "Errore nella query" });
+    } else if (data.length === 0) {
+      res.status(404).json({ error: 404, message: "Prodotto non trovato" });
+    } else {
+      res.json(data[0]);
+    }
   });
 }
 
 // SEARCH + SORT
-
 export function searchProducts(req, res) {
   const search = req.query.search || "";
-  const sort = req.query.sort || "name_asc"; // default
+  const sort = req.query.sort || "name_asc";
 
   let orderBy = "ORDER BY name ASC";
   if (sort === "price_asc") orderBy = "ORDER BY price ASC";
@@ -40,26 +36,30 @@ export function searchProducts(req, res) {
   else if (sort === "recent") orderBy = "ORDER BY created_at DESC";
 
   const sql = `SELECT * FROM products WHERE name LIKE ? ${orderBy}`;
-  db.query(sql, [`%${search}%`], (err, results) => {
-    if (err)
-      return res.status(502).json({ error: 502, message: "invalid query" });
-    res.json(results);
+  db.query(sql, [`%${search}%`], (err, data) => {
+    if (err) {
+      res.status(502).json({ error: 502, message: "Errore nella query" });
+    } else {
+      res.json(data);
+    }
   });
 }
 
-// LATEST ARRIVALS
-
+// LATEST PRODUCTS
 export function getRecentProducts(req, res) {
-  const sql = "SELECT * FROM products ORDER BY created_at DESC LIMIT 10";
-  db.query(sql, (err, results) => {
-    if (err)
-      return res.status(502).json({ error: 502, message: "invalid query" });
-    res.json(results);
-  });
+  db.query(
+    "SELECT * FROM products ORDER BY created_at DESC LIMIT 10",
+    (err, data) => {
+      if (err) {
+        res.status(502).json({ error: 502, message: "Errore nella query" });
+      } else {
+        res.json(data);
+      }
+    }
+  );
 }
 
 // BEST SELLERS
-
 export function getMostSoldProducts(req, res) {
   const sql = `
     SELECT p.*, COUNT(op.product_id) as sold_count
@@ -69,9 +69,11 @@ export function getMostSoldProducts(req, res) {
     ORDER BY sold_count DESC
     LIMIT 10
   `;
-  db.query(sql, (err, results) => {
-    if (err)
-      return res.status(502).json({ error: 502, message: "invalid query" });
-    res.json(results);
+  db.query(sql, (err, data) => {
+    if (err) {
+      res.status(502).json({ error: 502, message: "Errore nella query" });
+    } else {
+      res.json(data);
+    }
   });
 }
