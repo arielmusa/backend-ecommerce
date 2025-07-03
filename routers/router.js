@@ -53,15 +53,4 @@ router.get("/orders/:id", showOrders);
 // Checkout: conferma ordine
 router.post("/orders", createOrder);
 
-//  CART ROUTES
-
-// Visualizza carrello
-router.get("/cart", getCart);
-
-// Aggiungi prodotto al carrello
-router.post("/cart", addToCart);
-
-// Modifica quantità prodotto nel carrello
-router.put("/cart", updateCart);
-
 export default router;
