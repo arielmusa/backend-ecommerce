@@ -3,12 +3,15 @@ import "dotenv/config";
 import cors from "cors";
 import router from "./routers/router.js";
 import stripeRouter from "./routers/stripeRouter.js";
+import addImageUrl from "./middlewares/AddImageUrl.js";
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 app.use(express.static("public"));
+
+app.use(addImageUrl);
 
 app.use("/", router);
 app.use("/stripe", stripeRouter);
