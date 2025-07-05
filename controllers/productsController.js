@@ -13,15 +13,27 @@ export default function index(req, res) {
 
 // PRODUCT DETAIL
 export function getProductById(req, res) {
-  const id = req.params.id;
-  db.query("SELECT * FROM products WHERE id = ?", [id], (err, data) => {
-    if (err) {
-      res.status(502).json({ error: 502, message: "Errore nella query" });
-    } else if (data.length === 0) {
-      res.status(404).json({ error: 404, message: "Prodotto non trovato" });
-    } else {
-      res.json(data[0]);
+  const productId = req.params.id;
+
+  const sql = `
+    SELECT 
+      p.*, 
+      b.name AS brand_name, 
+      c.name AS category_name
+    FROM products p
+    JOIN brands b ON p.brand_id = b.id
+    JOIN categories c ON p.category_id = c.id
+    WHERE p.id = ?
+  `;
+
+  db.query(sql, [productId], (err, result) => {
+    if (err || result.length === 0) {
+      return res
+        .status(404)
+        .json({ error: 404, message: "Prodotto non trovato" });
     }
+
+    res.json(result[0]);
   });
 }
 
