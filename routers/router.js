@@ -7,6 +7,8 @@ import {
   getProductById,
   getMostSoldProducts,
   getRecentProducts,
+  getBrands,
+  getCategories,
 } from "../controllers/productsController.js";
 
 // CONTROLLERS ordini
@@ -25,6 +27,8 @@ router.get("/products", index);
 // Ricerca + ordinamento
 
 router.get("/products/search", searchProducts);
+router.get("/brands", getBrands);
+router.get("/categories", getCategories);
 
 // Ultimi arrivi
 router.get("/products/recent", getRecentProducts);

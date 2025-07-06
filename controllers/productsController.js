@@ -152,3 +152,27 @@ export function getMostSoldProducts(req, res) {
     }
   });
 }
+
+export function getBrands(req, res) {
+  const sql = "SELECT id, name FROM brands ORDER BY name ASC";
+
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error("Errore nel recupero brands:", err);
+      return res.status(500).json({ error: 500, message: "Query fallita" });
+    }
+    res.json(results);
+  });
+}
+
+export function getCategories(req, res) {
+  const sql = "SELECT id, name FROM categories ORDER BY name ASC";
+
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error("Errore nel recupero categorie:", err);
+      return res.status(500).json({ error: 500, message: "Query fallita" });
+    }
+    res.json(results);
+  });
+}
