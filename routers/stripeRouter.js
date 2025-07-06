@@ -34,6 +34,51 @@ stripeRouter.post("/create-checkout-session", async (req, res) => {
 
   // Create a checkout session with the provided items
   const session = await stripe.checkout.sessions.create({
+    shipping_address_collection: {
+      allowed_countries: ["IT"],
+    },
+    shipping_options: [
+      {
+        shipping_rate_data: {
+          type: "fixed_amount",
+          fixed_amount: {
+            amount: 0,
+            currency: "eur",
+          },
+          display_name: "Spedizione gratuita",
+          delivery_estimate: {
+            minimum: {
+              unit: "business_day",
+              value: 5,
+            },
+            maximum: {
+              unit: "business_day",
+              value: 7,
+            },
+          },
+        },
+      },
+      {
+        shipping_rate_data: {
+          type: "fixed_amount",
+          fixed_amount: {
+            amount: 1500,
+            currency: "eur",
+          },
+          display_name: "Next day air",
+          delivery_estimate: {
+            minimum: {
+              unit: "business_day",
+              value: 1,
+            },
+            maximum: {
+              unit: "business_day",
+              value: 1,
+            },
+          },
+        },
+      },
+    ],
     ui_mode: "embedded",
     line_items: checkoutItems,
     mode: "payment",
