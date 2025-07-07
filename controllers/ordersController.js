@@ -49,26 +49,44 @@ export function getOrderDetail(req, res) {
 export async function createOrder(req, res) {
   const { user, paymentMethod, products } = req.body;
 
+  // ✅ Validazione iniziale
   if (!user || !products || products.length === 0 || !paymentMethod) {
-    return res
-      .status(400)
-      .json({ error: 400, message: "Dati mancanti o non validi" });
+    return res.status(400).json({
+      error: 400,
+      message: "Dati mancanti o non validi",
+    });
   }
 
-  const orderNumber = +Math.floor(Math.random() * 1000000);
+  // ✅ Validazione prodotti
+  const invalidItem = products.find(
+    (item) =>
+      !item.productId || typeof item.quantity !== "number" || item.quantity < 1
+  );
 
-  // controllo se utente esiste già
+  if (invalidItem) {
+    return res.status(400).json({
+      error: 400,
+      message: `Prodotto non valido: ID ${invalidItem.productId}, quantità ${invalidItem.quantity}`,
+    });
+  }
+
+  const orderNumber = Math.floor(Math.random() * 1000000);
+
+  // 🔎 Verifica se utente esiste già
   const checkUserSql = "SELECT id FROM users WHERE email = ?";
   db.query(checkUserSql, [user.email], (err1, result1) => {
     if (err1) {
       console.log("Errore verifica utente:", err1);
-      return res.status(502).json({ error: 502, message: "Errore utente" });
+      return res
+        .status(502)
+        .json({ error: 502, message: "Errore verifica utente" });
     }
 
     if (result1.length > 0) {
       const userId = result1[0].id;
       createOrderWithUser(userId);
     } else {
+      // 👤 Inserimento nuovo utente
       const insertUserSql = `
         INSERT INTO users (name, surname, email, phone, address, postal_code, city, province, country, notes)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -101,6 +119,7 @@ export async function createOrder(req, res) {
       );
     }
 
+    // 🎯 Creazione ordine + prodotti
     function createOrderWithUser(userId) {
       const insertOrderSql = `
         INSERT INTO orders (user_id, order_number, payment_method, address, total, status)
@@ -132,9 +151,9 @@ export async function createOrder(req, res) {
                 total += price * item.quantity;
 
                 const insertProductSql = `
-              INSERT INTO order_product (product_id, order_id, product_quantity)
-              VALUES (?, ?, ?)
-            `;
+                INSERT INTO order_product (product_id, order_id, product_quantity)
+                VALUES (?, ?, ?)
+              `;
                 db.query(
                   insertProductSql,
                   [item.productId, orderId, item.quantity],
@@ -153,7 +172,7 @@ export async function createOrder(req, res) {
                               .json({ error: 502, message: "Errore totale" });
                           }
 
-                          // invio email utente e venditore
+                          // 📧 Invio email utente e venditore
                           try {
                             await sendEmail(
                               user.email,
