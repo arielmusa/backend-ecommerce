@@ -4,7 +4,8 @@ import express from "express";
 import index from "../controllers/productsController.js";
 import {
   searchProducts,
-  getProductById,
+  getProductBySlug,
+  // getProductById,
   getMostSoldProducts,
   getRecentProducts,
   getBrands,
@@ -37,7 +38,7 @@ router.get("/products/recent", getRecentProducts);
 router.get("/products/best-sellers", getMostSoldProducts);
 
 // Dettaglio prodotto
-router.get("/products/:id", getProductById);
+router.get("/products/:slug", getProductBySlug);
 
 // ORDERS ROUTES
 
