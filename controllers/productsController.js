@@ -68,8 +68,8 @@ export function searchProducts(req, res) {
   const category = req.query.category || "";
   const minPrice = parseFloat(req.query.minPrice) || 0;
   const maxPrice = parseFloat(req.query.maxPrice) || Infinity;
+  const promoOnly = req.query.promo === "true"; // ✅ nuovo parametro
 
-  // Ordine dinamico in base al tipo
   let orderBy = "ORDER BY p.name ASC";
   if (sort === "price_asc") {
     orderBy = "ORDER BY effective_price ASC";
@@ -98,6 +98,12 @@ export function searchProducts(req, res) {
     values.push(category);
   }
 
+  // ✅ Filtro per prodotti in promozione
+  if (promoOnly) {
+    filters.push("p.promotion_price > 0");
+  }
+
+  // Filtro sul prezzo effettivo
   filters.push(`
     CASE 
       WHEN p.promotion_price > 0 THEN p.promotion_price 
