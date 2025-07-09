@@ -3,6 +3,7 @@ import "dotenv/config";
 import cors from "cors";
 import router from "./routers/router.js";
 import stripeRouter from "./routers/stripeRouter.js";
+import dialogflowRouter from "./routers/dialogflowRouter.js";
 import addImageUrl from "./middlewares/AddImageUrl.js";
 
 const app = express();
@@ -15,6 +16,7 @@ app.use(addImageUrl);
 
 app.use("/", router);
 app.use("/stripe", stripeRouter);
+app.use("/api/dialogflow", dialogflowRouter);
 
 app.get("/", (req, res) => {
   res.send("Welcome!");
