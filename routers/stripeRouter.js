@@ -16,6 +16,54 @@ const YOUR_DOMAIN = "http://localhost:5173";
 // This endpoint is used to create a checkout session. It receives a cart object from the client, which contains items to be purchased.
 stripeRouter.post("/create-checkout-session", async (req, res) => {
   const cart = req.body;
+  const freeShipping = 100; // in €
+  const shippingOptions = {
+    free_shipping: {
+      shipping_rate_data: {
+        type: "fixed_amount",
+        fixed_amount: {
+          amount: 0,
+          currency: "eur",
+        },
+        display_name: "Spedizione gratuita",
+        delivery_estimate: {
+          minimum: {
+            unit: "business_day",
+            value: 5,
+          },
+          maximum: {
+            unit: "business_day",
+            value: 7,
+          },
+        },
+      },
+    },
+    paid_shipping: {
+      shipping_rate_data: {
+        type: "fixed_amount",
+        fixed_amount: {
+          amount: 1500,
+          currency: "eur",
+        },
+        display_name: "Spedizione a pagamento",
+        delivery_estimate: {
+          minimum: {
+            unit: "business_day",
+            value: 5,
+          },
+          maximum: {
+            unit: "business_day",
+            value: 7,
+          },
+        },
+      },
+    },
+  };
+  const checkoutShippingOption =
+    cart.reduce((tot, item) => tot + item.price * item.quantity, 0) >
+    freeShipping
+      ? shippingOptions.free_shipping
+      : shippingOptions.paid_shipping;
 
   // Validate the cart object
   if (!Array.isArray(cart) || cart.length === 0) {
@@ -37,48 +85,7 @@ stripeRouter.post("/create-checkout-session", async (req, res) => {
     shipping_address_collection: {
       allowed_countries: ["IT"],
     },
-    shipping_options: [
-      {
-        shipping_rate_data: {
-          type: "fixed_amount",
-          fixed_amount: {
-            amount: 0,
-            currency: "eur",
-          },
-          display_name: "Spedizione gratuita",
-          delivery_estimate: {
-            minimum: {
-              unit: "business_day",
-              value: 5,
-            },
-            maximum: {
-              unit: "business_day",
-              value: 7,
-            },
-          },
-        },
-      },
-      {
-        shipping_rate_data: {
-          type: "fixed_amount",
-          fixed_amount: {
-            amount: 1500,
-            currency: "eur",
-          },
-          display_name: "Next day air",
-          delivery_estimate: {
-            minimum: {
-              unit: "business_day",
-              value: 1,
-            },
-            maximum: {
-              unit: "business_day",
-              value: 1,
-            },
-          },
-        },
-      },
-    ],
+    shipping_options: [checkoutShippingOption],
     ui_mode: "embedded",
     line_items: checkoutItems,
     mode: "payment",
