@@ -49,7 +49,6 @@ export function getOrderDetail(req, res) {
 export async function createOrder(req, res) {
   const { user, paymentMethod, products } = req.body;
 
-  // ✅ Validazione iniziale
   if (!user || !products || products.length === 0 || !paymentMethod) {
     return res.status(400).json({
       error: 400,
@@ -57,7 +56,6 @@ export async function createOrder(req, res) {
     });
   }
 
-  // ✅ Validazione prodotti
   const invalidItem = products.find(
     (item) =>
       !item.productId || typeof item.quantity !== "number" || item.quantity < 1
@@ -72,7 +70,6 @@ export async function createOrder(req, res) {
 
   const orderNumber = Math.floor(Math.random() * 1000000);
 
-  // 🔎 Verifica se utente esiste già
   const checkUserSql = "SELECT id FROM users WHERE email = ?";
   db.query(checkUserSql, [user.email], (err1, result1) => {
     if (err1) {
@@ -83,10 +80,8 @@ export async function createOrder(req, res) {
     }
 
     if (result1.length > 0) {
-      const userId = result1[0].id;
-      createOrderWithUser(userId);
+      createOrderWithUser(result1[0].id);
     } else {
-      // 👤 Inserimento nuovo utente
       const insertUserSql = `
         INSERT INTO users (name, surname, email, phone, address, postal_code, city, province, country, notes)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -113,13 +108,11 @@ export async function createOrder(req, res) {
               .json({ error: 502, message: "Errore creazione utente" });
           }
 
-          const userId = result2.insertId;
-          createOrderWithUser(userId);
+          createOrderWithUser(result2.insertId);
         }
       );
     }
 
-    // 🎯 Creazione ordine + prodotti
     function createOrderWithUser(userId) {
       const insertOrderSql = `
         INSERT INTO orders (user_id, order_number, payment_method, address, total, status)
@@ -140,15 +133,23 @@ export async function createOrder(req, res) {
           let total = 0;
           let inseriti = 0;
 
+          const enrichedProducts = [];
+
           products.forEach((item) => {
             db.query(
-              "SELECT price FROM products WHERE id = ?",
+              "SELECT name, price FROM products WHERE id = ?",
               [item.productId],
               (err4, result4) => {
                 if (err4 || result4.length === 0) return;
 
-                const price = result4[0].price;
+                const { name, price } = result4[0];
                 total += price * item.quantity;
+
+                enrichedProducts.push({
+                  name,
+                  quantity: item.quantity,
+                  price,
+                });
 
                 const insertProductSql = `
                 INSERT INTO order_product (product_id, order_id, product_quantity)
@@ -172,18 +173,87 @@ export async function createOrder(req, res) {
                               .json({ error: 502, message: "Errore totale" });
                           }
 
-                          // 📧 Invio email utente e venditore
+                          // 📧 Generazione HTML email
+                          let htmlRows = "";
+                          enrichedProducts.forEach((p) => {
+                            htmlRows += `
+                          <tr>
+                            <td>${p.name}</td>
+                            <td style="text-align:center;">${p.quantity}</td>
+                            <td style="text-align:right;">€${parseFloat(
+                              p.price
+                            ).toFixed(2)}</td>
+
+                          </tr>
+                        `;
+                          });
+
+                          const htmlContent = `
+                        <div style="font-family:Arial,sans-serif;color:#333;">
+                          <h2 style="color:#d10024;">Riepilogo ordine #${orderNumber}</h2>
+                          <p>Ciao ${
+                            user.name
+                          }, ecco i dettagli del tuo ordine:</p>
+                          <table style="width:100%;border-collapse:collapse;">
+                            <thead>
+                              <tr>
+                                <th style="border-bottom:1px solid #ccc;text-align:left;">Prodotto</th>
+                                <th style="border-bottom:1px solid #ccc;text-align:center;">Quantità</th>
+                                <th style="border-bottom:1px solid #ccc;text-align:right;">Prezzo</th>
+                              </tr>
+                            </thead>
+                            <tbody>${htmlRows}</tbody>
+                          </table>
+                          <h3 style="text-align:right;color:#d10024;">Totale: €${total.toFixed(
+                            2
+                          )}</h3>
+                          <p>Grazie per il tuo ordine!<br/>Republic of Retro©</p>
+                        </div>
+                      `;
+                          const htmlVendorContent = `
+                                <div style="font-family:Arial,sans-serif;color:#333;">
+                                  <h2 style="color:#d10024;">Nuovo ordine ricevuto - #${orderNumber}</h2>
+                                  <p>Hai ricevuto un nuovo ordine da <strong>${
+                                    user.name
+                                  } ${user.surname}</strong>.</p>
+                                  <p><strong>Email:</strong> ${user.email}<br/>
+                                  <strong>Telefono:</strong> ${user.phone}<br/>
+                                  <strong>Indirizzo:</strong> ${
+                                    user.address
+                                  }, ${user.postal_code}, ${user.city} (${
+                            user.province
+                          }), ${user.country}</p>
+          
+                                        <table style="width:100%;border-collapse:collapse;margin-top:1rem;">
+                                          <thead>
+                                            <tr>
+                                              <th style="border-bottom:1px solid #ccc;text-align:left;">Prodotto</th>
+                                              <th style="border-bottom:1px solid #ccc;text-align:center;">Quantità</th>
+                                              <th style="border-bottom:1px solid #ccc;text-align:right;">Prezzo</th>
+                                            </tr>
+                                          </thead>
+                                          <tbody>
+                                           ${htmlRows}
+                                         </tbody>
+                                        </table>
+
+                                       <h3 style="text-align:right;color:#d10024;">Totale ordine: €${total.toFixed(
+                                         2
+                                       )}</h3>
+                                        <p>Controlla l’area venditori per evadere l’ordine.<br/>Republic of Retro©</p>
+                                      </div>
+      `;
+
                           try {
                             await sendEmail(
                               user.email,
                               "Conferma ordine",
-                              `Ciao ${user.name}, grazie per il tuo ordine n° ${orderNumber}!`
+                              htmlContent
                             );
-
                             await sendEmail(
                               "venditore@email.com",
                               "Nuovo ordine ricevuto",
-                              `Hai ricevuto un nuovo ordine da ${user.name} ${user.surname}.`
+                              htmlVendorContent
                             );
                           } catch (emailErr) {
                             console.log("Errore invio email:", emailErr);

@@ -9,11 +9,11 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-export async function sendEmail(to, subject, text) {
+export async function sendEmail(to, subject, html) {
   await transporter.sendMail({
-    from: '"Republic of Retro" <no-reply@demo.com>', // mittente fittizio
-    to, // destinatario
-    subject, // oggetto
-    text, // contenuto testuale
+    from: '"Republic of Retro" <no-reply@demo.com>',
+    to,
+    subject,
+    html, // ← email in formato HTML
   });
 }
