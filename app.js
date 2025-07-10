@@ -5,18 +5,20 @@ import router from "./routers/router.js";
 import stripeRouter from "./routers/stripeRouter.js";
 import dialogflowRouter from "./routers/dialogflowRouter.js";
 import addImageUrl from "./middlewares/AddImageUrl.js";
+import productImagesRouter from "./routers/productImages.js";
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
-app.use("/public", express.static("public"));
+app.use(express.static("public"));
 
 app.use(addImageUrl);
 
 app.use("/", router);
 app.use("/stripe", stripeRouter);
 app.use("/api/dialogflow", dialogflowRouter);
+app.use("/product-images", productImagesRouter);
 
 app.get("/", (req, res) => {
   res.send("Welcome!");

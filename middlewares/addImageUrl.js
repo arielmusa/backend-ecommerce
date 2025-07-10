@@ -1,4 +1,4 @@
-const baseUrl = "http://localhost:3000/public/";
+const baseUrl = "http://localhost:3000/";
 
 const addImageUrl = (req, res, next) => {
   const originalJson = res.json;
