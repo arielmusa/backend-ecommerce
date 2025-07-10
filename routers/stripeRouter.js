@@ -16,7 +16,7 @@ const YOUR_DOMAIN = "http://localhost:5173";
 // This endpoint is used to create a checkout session. It receives a cart object from the client, which contains items to be purchased.
 stripeRouter.post("/create-checkout-session", async (req, res) => {
   const cart = req.body;
-  const freeShipping = 100; // in €
+  const freeShipping = 600; // in €
   const shippingOptions = {
     free_shipping: {
       shipping_rate_data: {
