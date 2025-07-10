@@ -86,9 +86,16 @@ stripeRouter.post("/create-checkout-session", async (req, res) => {
       allowed_countries: ["IT"],
     },
     shipping_options: [checkoutShippingOption],
+    phone_number_collection: {
+      enabled: true,
+    },
     ui_mode: "embedded",
     line_items: checkoutItems,
     mode: "payment",
+    metadata: {
+      product_ids: cart.map((item) => item.id).join(","),
+      product_quantities: cart.map((item) => item.quantity).join(","),
+    },
     return_url: `${YOUR_DOMAIN}/return?session_id={CHECKOUT_SESSION_ID}`,
   });
 
