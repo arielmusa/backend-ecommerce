@@ -99,9 +99,39 @@ stripeRouter.post("/create-checkout-session", async (req, res) => {
 stripeRouter.get("/session-status", async (req, res) => {
   const session = await stripe.checkout.sessions.retrieve(req.query.session_id);
 
+  if (!session) {
+    return res.status(404).send({ error: "Session not found" });
+  }
+
+  const user = {
+    name: session.customer_details.name,
+    surname: session.customer_details.name,
+    email: session.customer_details.email,
+    phone: session.customer_details.phone,
+    address: session.customer_details.address.line1,
+    postal_code: session.customer_details.address.postal_code,
+    city: session.customer_details.address.city,
+    province: session.customer_details.address.state,
+    country: session.customer_details.address.country,
+    notes: "",
+  };
+  const paymentMethod = session.payment_method_types[0];
+  const products = session.metadata.product_ids.split(",").map((id, index) => ({
+    productId: id,
+    quantity: parseInt(
+      session.metadata.product_quantities.split(",")[index],
+      10
+    ),
+  }));
+  const shippingCost = session.shipping_cost.amount_total;
+
   res.send({
     status: session.status,
     customer_email: session.customer_details.email,
+    user,
+    paymentMethod,
+    products,
+    shippingCost,
   });
 });
 
