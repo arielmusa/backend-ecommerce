@@ -24,6 +24,13 @@ app.get("/", (req, res) => {
   res.send("Welcome!");
 });
 
+app.use((req, res, next) => {
+  res.status(404).json({
+    error: "Not Found",
+    message: "La risorsa richiesta non esiste.",
+  });
+});
+
 app.listen(3000, () => {
   console.log("Server listening at http://localhost:3000");
 });
